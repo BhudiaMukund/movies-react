@@ -1,9 +1,84 @@
-import React from 'react'
+import React, { useState, useEffect } from "react";
+import Search from "./components/Search";
+
+const API_BASE_URL = "https://api.themoviedb.org/3";
+const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+const API_OPTIONS = {
+  method: "GET",
+  headers: {
+    accept: "application/json",
+    Authorization: `Bearer ${API_KEY}`,
+  },
+};
 
 const App = () => {
-  return (
-    <div>App</div>
-  )
-}
+  const [searchQuery, setSearchQuery] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [movies, setMovies] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const fetchMovies = async () => {
+    try {
+      setIsLoading(true);
+      setErrorMessage(""); // Clear any previous error messages
+      const endpoint = `${API_BASE_URL}/discover/movie?api_key=${API_KEY}&sort_by=popularity.desc`;
+      const response = await fetch(endpoint, API_OPTIONS);
+      if (!response.ok) {
+        throw new Error(data.status_message || "Failed to fetch data");
+      }
+      const data = await response.json();
 
-export default App
+      if (data.response === "False") {
+        setErrorMessage("No movies found for the given search query.");
+        setMovies([]);
+      }
+      setMovies(data.results);
+
+      console.log(data);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setErrorMessage(
+        "An error occurred while fetching data. Please try again later.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMovies();
+  }, [searchQuery]);
+
+  return (
+    <main>
+      <div className="pattern"></div>
+      <div className="wrapper">
+        <header>
+          <img src="/hero.png" alt="Hero" />
+          <h1>
+            Find <span className="text-gradient">Movies</span> You Enjoy Without
+            the Hassle
+          </h1>
+          <Search searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+        </header>
+        <section className="all-movies">
+          <h2 className="mt-[40px]">All Movies</h2>
+          {isLoading ? (
+            <p>Loading...</p>
+          ) : errorMessage ? (
+            <p className="text-red-500">{errorMessage}</p>
+          ) : (
+            <ul className="movies-list">
+              {movies.map((movie) => (
+                <p key={movie.id} className="text-white">
+                  {movie.title}
+                </p>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+    </main>
+  );
+};
+
+export default App;
